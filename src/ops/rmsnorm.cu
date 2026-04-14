@@ -215,15 +215,14 @@ __global__ void rmsnorm_fused_add_kernel(const float* input, const float* residu
     thread_sum_sq = warp_reduce_sum(thread_sum_sq);
 
     __shared__ float inv_rms;
+    __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
+
     if (tid % 32 == 0) {
-        __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
         shared_sum_sq[tid / 32] = thread_sum_sq;
     }
     __syncthreads();
 
     if (tid < 32) {
-        __shared__ float* shared_sum_sq = reinterpret_cast<float*>(
-            &inv_rms - BLOCK_SIZE / 32);
         thread_sum_sq = (tid < BLOCK_SIZE / 32) ? shared_sum_sq[tid] : 0.0f;
         thread_sum_sq = warp_reduce_sum(thread_sum_sq);
         if (tid == 0) {
