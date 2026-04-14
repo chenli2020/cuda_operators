@@ -44,7 +44,17 @@ echo "✓ NVCC: $(nvcc --version | grep release)"
 # 2. 安装依赖
 echo ""
 echo "📥 安装构建依赖..."
-pip install -q pybind11 2>/dev/null || true
+$PYTHON_BIN -m pip install -q pybind11 2>/dev/null || true
+
+# 验证 pybind11 安装
+echo "验证 pybind11..."
+if $PYTHON_BIN -c "import pybind11; print('✓ pybind11 version:', pybind11.__version__)" 2>/dev/null; then
+    echo "✓ pybind11 已安装"
+else
+    echo "❌ pybind11 安装失败"
+    echo "手动安装: pip install pybind11"
+    exit 1
+fi
 
 # 3. 创建构建目录
 echo ""
