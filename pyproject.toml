@@ -1,0 +1,31 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "cuda_operators"
+version = "0.1.0"
+description = "CUDA operator development template for learning"
+authors = [{name = "Developer", email = "dev@example.com"}]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0.0",
+    "numpy",
+    "pytest",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-benchmark",
+    "matplotlib",
+]
+
+[tool.scikit-build]
+cmake.minimum-version = "3.18"
+cmake.args = ["-DCMAKE_CUDA_ARCHITECTURES=80"]
+build-dir = "build/{wheel_tag}"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

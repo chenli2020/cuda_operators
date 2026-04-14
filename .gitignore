@@ -1,0 +1,56 @@
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Profiling
+*.nsys-rep
+*.ncu-rep
+profile/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+standard_*.ipynb  # Converted notebooks for cloud platforms
+
+# Cloud platform specific
+*.bat.backup
+*.sh.backup
