@@ -63,6 +63,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/ops)
 
+# Add CUDA include directories for C++ compilation
+if(CUDA_TOOLKIT_ROOT_DIR)
+    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+endif()
+
 # Source files
 file(GLOB CUDA_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ops/*.cu

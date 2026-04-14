@@ -86,16 +86,15 @@ __global__ void rmsnorm_warp_kernel(const float* input, const float* weight,
 
     // 收集并得到最终 inv_rms
     __shared__ float inv_rms;
+    __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
+
     if (tid % 32 == 0) {
         // 使用共享内存的一部分存储 warp 部分和
-        __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
         shared_sum_sq[tid / 32] = thread_sum_sq;
     }
     __syncthreads();
 
     if (tid < 32) {
-        __shared__ float* shared_sum_sq = reinterpret_cast<float*>(
-            &inv_rms - BLOCK_SIZE / 32);
         thread_sum_sq = (tid < BLOCK_SIZE / 32) ? shared_sum_sq[tid] : 0.0f;
         thread_sum_sq = warp_reduce_sum(thread_sum_sq);
         if (tid == 0) {
@@ -147,15 +146,14 @@ __global__ void rmsnorm_vectorized_kernel(const float* input,
     thread_sum_sq = warp_reduce_sum(thread_sum_sq);
 
     __shared__ float inv_rms;
+    __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
+
     if (tid % 32 == 0) {
-        __shared__ float shared_sum_sq[BLOCK_SIZE / 32];
         shared_sum_sq[tid / 32] = thread_sum_sq;
     }
     __syncthreads();
 
     if (tid < 32) {
-        __shared__ float* shared_sum_sq = reinterpret_cast<float*>(
-            &inv_rms - BLOCK_SIZE / 32);
         thread_sum_sq = (tid < BLOCK_SIZE / 32) ? shared_sum_sq[tid] : 0.0f;
         thread_sum_sq = warp_reduce_sum(thread_sum_sq);
         if (tid == 0) {
