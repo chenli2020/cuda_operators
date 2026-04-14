@@ -1,6 +1,17 @@
 #pragma once
 
+#ifdef __CUDACC__
 #include <cuda_runtime.h>
+#else
+// 当不在CUDA环境时，提供基本定义避免编译错误
+#ifndef __device__
+#define __device__
+#define __host__
+#define __forceinline__
+#define __global__
+#endif
+#endif
+
 #include <cstdio>
 #include <stdexcept>
 #include <cstring>
@@ -87,6 +98,7 @@ inline LaunchConfig get_launch_config_2d(int h, int w, int block_x = 16,
  * @param val 每个线程输入的值
  * @return 整个 warp 的和（只有线程 0 的结果有效，或广播给所有线程）
  */
+#ifdef __CUDACC__
 __device__ __forceinline__ float warp_reduce_sum(float val) {
     // 0xFFFFFFFF 表示所有 32 个线程都参与
     for (int offset = 16; offset > 0; offset /= 2)
@@ -100,10 +112,17 @@ __device__ __forceinline__ float warp_reduce_sum(float val) {
  * 与 warp_reduce_sum 类似，只是操作换成 max
  */
 __device__ __forceinline__ float warp_reduce_max(float val) {
-    for (int offset = 16; offset > 0; offset /= 2)
-        val = max(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+    for (int offset = 16; offset > 0; offset /= 2) {
+        float other = __shfl_down_sync(0xFFFFFFFF, val, offset);
+        val = (val > other) ? val : other;
+    }
     return val;
 }
+#else
+// 在非CUDA环境中的空实现
+static inline float warp_reduce_sum(float val) { return val; }
+static inline float warp_reduce_max(float val) { return val; }
+#endif
 
 /**
  * Block 级别归约 - 求和（使用共享内存）
@@ -118,6 +137,7 @@ __device__ __forceinline__ float warp_reduce_max(float val) {
  * @param shared 共享内存数组，大小至少为 BLOCK_SIZE
  * @return block 的总和
  */
+#ifdef __CUDACC__
 template <int BLOCK_SIZE>
 __device__ __forceinline__ float
 block_reduce_sum(float val, float *shared) {
@@ -145,12 +165,23 @@ block_reduce_max(float val, float *shared) {
     __syncthreads();
 
     for (int s = BLOCK_SIZE / 2; s > 0; s >>= 1) {
-        if (tid < s) shared[tid] = max(shared[tid], shared[tid + s]);
+        if (tid < s) {
+            float a = shared[tid];
+            float b = shared[tid + s];
+            shared[tid] = (a > b) ? a : b;
+        }
         __syncthreads();
     }
 
     return shared[0];
 }
+#else
+// 在非CUDA环境中的空实现
+template <int BLOCK_SIZE>
+static inline float block_reduce_sum(float val, float *shared) { return val; }
+template <int BLOCK_SIZE>
+static inline float block_reduce_max(float val, float *shared) { return val; }
+#endif
 
 /**
  * 整数除法向上取整

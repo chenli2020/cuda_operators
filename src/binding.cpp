@@ -19,6 +19,13 @@
 #include <stdexcept>
 #include <cstring>
 
+// 重命名命名空间避免函数名冲突
+namespace softmax_ops = softmax;
+namespace layernorm_ops = layernorm;
+namespace rmsnorm_ops = rmsnorm;
+namespace matmul_ops = matmul;
+namespace reduce_ops = reduce;
+
 #include "ops/reduce.h"
 #include "ops/softmax.h"
 #include "ops/layernorm.h"
@@ -133,13 +140,13 @@ py::array_t<float> softmax(py::array_t<float> input, int rows, int cols,
     CUDA_CHECK(cudaMemcpy(d_in, d_input, rows * cols * sizeof(float), cudaMemcpyHostToDevice));
 
     if (impl == "naive") {
-        softmax::softmax_naive(d_in, d_out, rows, cols);
+        softmax_ops::softmax_naive(d_in, d_out, rows, cols);
     } else if (impl == "online") {
-        softmax::softmax_online(d_in, d_out, rows, cols);
+        softmax_ops::softmax_online(d_in, d_out, rows, cols);
     } else if (impl == "warp") {
-        softmax::softmax_warp(d_in, d_out, rows, cols);
+        softmax_ops::softmax_warp(d_in, d_out, rows, cols);
     } else {
-        softmax::softmax(d_in, d_out, rows, cols);
+        softmax_ops::softmax(d_in, d_out, rows, cols);
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -149,7 +156,7 @@ py::array_t<float> softmax(py::array_t<float> input, int rows, int cols,
     CUDA_CHECK(cudaFree(d_out));
 
     // 重塑形状以匹配输入
-    output.resize_({rows, cols});
+    output.resize({rows, cols});
     return output;
 }
 
@@ -186,13 +193,13 @@ py::array_t<float> layernorm(py::array_t<float> input,
     CUDA_CHECK(cudaMemcpy(d_b, d_bias, cols * sizeof(float), cudaMemcpyHostToDevice));
 
     if (impl == "naive") {
-        layernorm::layernorm_naive(d_in, d_w, d_b, d_out, rows, cols, eps);
+        layernorm_ops::layernorm_naive(d_in, d_w, d_b, d_out, rows, cols, eps);
     } else if (impl == "warp") {
-        layernorm::layernorm_warp(d_in, d_w, d_b, d_out, rows, cols, eps);
+        layernorm_ops::layernorm_warp(d_in, d_w, d_b, d_out, rows, cols, eps);
     } else if (impl == "vectorized") {
-        layernorm::layernorm_vectorized(d_in, d_w, d_b, d_out, rows, cols, eps);
+        layernorm_ops::layernorm_vectorized(d_in, d_w, d_b, d_out, rows, cols, eps);
     } else {
-        layernorm::layernorm(d_in, d_w, d_b, d_out, rows, cols, eps);
+        layernorm_ops::layernorm(d_in, d_w, d_b, d_out, rows, cols, eps);
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -203,7 +210,7 @@ py::array_t<float> layernorm(py::array_t<float> input,
     CUDA_CHECK(cudaFree(d_b));
     CUDA_CHECK(cudaFree(d_out));
 
-    output.resize_({rows, cols});
+    output.resize({rows, cols});
     return output;
 }
 
@@ -235,13 +242,13 @@ py::array_t<float> rmsnorm(py::array_t<float> input,
     CUDA_CHECK(cudaMemcpy(d_w, d_weight, cols * sizeof(float), cudaMemcpyHostToDevice));
 
     if (impl == "naive") {
-        rmsnorm::rmsnorm_naive(d_in, d_w, d_out, rows, cols, eps);
+        rmsnorm_ops::rmsnorm_naive(d_in, d_w, d_out, rows, cols, eps);
     } else if (impl == "warp") {
-        rmsnorm::rmsnorm_warp(d_in, d_w, d_out, rows, cols, eps);
+        rmsnorm_ops::rmsnorm_warp(d_in, d_w, d_out, rows, cols, eps);
     } else if (impl == "vectorized") {
-        rmsnorm::rmsnorm_vectorized(d_in, d_w, d_out, rows, cols, eps);
+        rmsnorm_ops::rmsnorm_vectorized(d_in, d_w, d_out, rows, cols, eps);
     } else {
-        rmsnorm::rmsnorm(d_in, d_w, d_out, rows, cols, eps);
+        rmsnorm_ops::rmsnorm(d_in, d_w, d_out, rows, cols, eps);
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
@@ -251,7 +258,7 @@ py::array_t<float> rmsnorm(py::array_t<float> input,
     CUDA_CHECK(cudaFree(d_w));
     CUDA_CHECK(cudaFree(d_out));
 
-    output.resize_({rows, cols});
+    output.resize({rows, cols});
     return output;
 }
 
@@ -283,15 +290,15 @@ py::array_t<float> matmul(py::array_t<float> A,
     CUDA_CHECK(cudaMemcpy(d_b, d_B, K * N * sizeof(float), cudaMemcpyHostToDevice));
 
     if (impl == "naive") {
-        matmul::matmul_naive(d_a, d_b, d_c, M, N, K);
+        matmul_ops::matmul_naive(d_a, d_b, d_c, M, N, K);
     } else if (impl == "shared") {
-        matmul::matmul_shared(d_a, d_b, d_c, M, N, K);
+        matmul_ops::matmul_shared(d_a, d_b, d_c, M, N, K);
     } else if (impl == "1d_tiling") {
-        matmul::matmul_1d_tiling(d_a, d_b, d_c, M, N, K);
+        matmul_ops::matmul_1d_tiling(d_a, d_b, d_c, M, N, K);
     } else if (impl == "2d_tiling") {
-        matmul::matmul_2d_tiling(d_a, d_b, d_c, M, N, K);
+        matmul_ops::matmul_2d_tiling(d_a, d_b, d_c, M, N, K);
     } else {
-        matmul::matmul(d_a, d_b, d_c, M, N, K);
+        matmul_ops::matmul(d_a, d_b, d_c, M, N, K);
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
