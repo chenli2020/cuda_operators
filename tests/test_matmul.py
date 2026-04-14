@@ -17,7 +17,8 @@ def pytorch_matmul(A, B):
     """PyTorch matmul reference."""
     t_A = torch.from_numpy(A)
     t_B = torch.from_numpy(B)
-    return torch.matmul(t_A, t_B).numpy()
+    with torch.no_grad():
+        return torch.matmul(t_A, t_B).numpy()
 
 
 def test_matmul():

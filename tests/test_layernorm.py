@@ -21,7 +21,8 @@ def pytorch_layernorm(x, weight, bias, eps=1e-5):
     ln = torch.nn.LayerNorm(x.shape[-1], elementwise_affine=True, eps=eps)
     ln.weight.data = w
     ln.bias.data = b
-    return ln(t).numpy()
+    with torch.no_grad():
+        return ln(t).numpy()
 
 
 def test_layernorm():

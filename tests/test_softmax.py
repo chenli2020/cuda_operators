@@ -16,7 +16,8 @@ from utils import check_allclose, generate_random_input
 def pytorch_softmax(x):
     """PyTorch softmax reference."""
     t = torch.from_numpy(x)
-    return torch.nn.functional.softmax(t, dim=-1).numpy()
+    with torch.no_grad():
+        return torch.nn.functional.softmax(t, dim=-1).numpy()
 
 
 def test_softmax():

@@ -21,7 +21,8 @@ def pytorch_rmsnorm(x, weight, eps=1e-5):
     # RMSNorm: x / sqrt(mean(x^2) + eps) * weight
     rms = torch.sqrt(torch.mean(t ** 2, dim=-1, keepdim=True) + eps)
     normalized = t / rms
-    return (normalized * w).numpy()
+    with torch.no_grad():
+        return (normalized * w).numpy()
 
 
 def test_rmsnorm():
