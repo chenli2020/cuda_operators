@@ -254,13 +254,13 @@ py::array_t<float> reduce_sum_wrapper(py::array_t<float> input,
     CUDA_CHECK(cudaMemcpy(d_in, d_input, size * sizeof(float), cudaMemcpyHostToDevice));
 
     if (impl == "naive") {
-        reduce::reduce_naive(d_in, d_out, size);
+        reduce::reduce_sum_naive(d_in, d_out, size);
     } else if (impl == "shared") {
-        reduce::reduce_shared(d_in, d_out, size);
+        reduce::reduce_sum_shared(d_in, d_out, size);
     } else if (impl == "warp") {
-        reduce::reduce_warp(d_in, d_out, size);
+        reduce::reduce_sum_warp(d_in, d_out, size);
     } else {
-        reduce::reduce(d_in, d_out, size);
+        reduce::reduce_sum(d_in, d_out, size);
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
