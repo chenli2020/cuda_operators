@@ -42,6 +42,22 @@ endif()
 set(CMAKE_CUDA_ARCHITECTURES 80 86 89 90)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --use_fast_math")
 
+# Find CUDA package for libraries
+find_package(CUDA QUIET)
+
+# Setup CUDA library paths
+if(CUDA_FOUND)
+    message(STATUS "Found CUDA: ${CUDA_VERSION}")
+    message(STATUS "CUDA toolkit root: ${CUDA_TOOLKIT_ROOT_DIR}")
+else()
+    # Try to find CUDA manually
+    if(CMAKE_CUDA_COMPILER)
+        get_filename_component(CUDA_TOOLKIT_ROOT_DIR "${CMAKE_CUDA_COMPILER}" DIRECTORY)
+        get_filename_component(CUDA_TOOLKIT_ROOT_DIR "${CUDA_TOOLKIT_ROOT_DIR}" DIRECTORY)
+        message(STATUS "Deduced CUDA toolkit root: ${CUDA_TOOLKIT_ROOT_DIR}")
+    endif()
+endif()
+
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/common)
@@ -69,11 +85,42 @@ set_target_properties(cuda_ops PROPERTIES
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
 
-# Link CUDA libraries
-target_link_libraries(cuda_ops PRIVATE
-    CUDA::cudart
-    CUDA::cublas
-)
+# Link CUDA libraries - multiple fallback methods
+if(TARGET CUDA::cudart)
+    # Modern CMake CUDA targets
+    target_link_libraries(cuda_ops PRIVATE CUDA::cudart)
+    if(TARGET CUDA::cublas)
+        target_link_libraries(cuda_ops PRIVATE CUDA::cublas)
+    endif()
+    message(STATUS "Using modern CMake CUDA targets")
+elseif(CUDA_LIBRARIES)
+    # Legacy CUDA package
+    target_link_libraries(cuda_ops PRIVATE ${CUDA_LIBRARIES})
+    message(STATUS "Using legacy CUDA libraries: ${CUDA_LIBRARIES}")
+else()
+    # Manual library finding
+    find_library(CUDART_LIB cudart HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+    find_library(CUBLAS_LIB cublas HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+
+    if(CUDART_LIB)
+        target_link_libraries(cuda_ops PRIVATE ${CUDART_LIB})
+        message(STATUS "Found cudart: ${CUDART_LIB}")
+    else()
+        message(WARNING "cudart library not found, linking may fail")
+    endif()
+
+    if(CUBLAS_LIB)
+        target_link_libraries(cuda_ops PRIVATE ${CUBLAS_LIB})
+        message(STATUS "Found cublas: ${CUBLAS_LIB}")
+    else()
+        message(WARNING "cublas library not found, performance may be reduced")
+    endif()
+endif()
+
+# Add CUDA library directories for runtime
+if(CUDA_TOOLKIT_ROOT_DIR)
+    target_link_directories(cuda_ops PRIVATE ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+endif()
 
 # Print configuration
 message(STATUS "Python executable: ${Python_EXECUTABLE}")
