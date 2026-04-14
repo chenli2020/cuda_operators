@@ -19,13 +19,6 @@
 #include <stdexcept>
 #include <cstring>
 
-// 重命名命名空间避免函数名冲突
-namespace softmax_ops = softmax;
-namespace layernorm_ops = layernorm;
-namespace rmsnorm_ops = rmsnorm;
-namespace matmul_ops = matmul;
-namespace reduce_ops = reduce;
-
 #include "ops/reduce.h"
 #include "ops/softmax.h"
 #include "ops/layernorm.h"
@@ -34,6 +27,13 @@ namespace reduce_ops = reduce;
 #include "common/cuda_utils.h"
 
 namespace py = pybind11;
+
+// 在包含头文件后定义命名空间别名
+namespace softmax_ops = softmax;
+namespace layernorm_ops = layernorm;
+namespace rmsnorm_ops = rmsnorm;
+namespace matmul_ops = matmul;
+namespace reduce_ops = reduce;
 
 /**
  * 从 numpy 数组获取原始指针
@@ -308,7 +308,7 @@ py::array_t<float> matmul(py::array_t<float> A,
     CUDA_CHECK(cudaFree(d_b));
     CUDA_CHECK(cudaFree(d_c));
 
-    C.resize_({M, N});
+    C.resize({M, N});
     return C;
 }
 
@@ -331,24 +331,24 @@ PYBIND11_MODULE(cuda_ops, m) {
           "Reduce sum operation",
           py::arg("input"), py::arg("impl") = "auto");
 
-    m.def("softmax", &softmax,
+    m.def("softmax", static_cast<py::array_t<float>(*)(py::array_t<float>, int, int, const std::string&)>(&softmax),
           "Softmax operation",
           py::arg("input"), py::arg("rows"), py::arg("cols"),
           py::arg("impl") = "auto");
 
-    m.def("layernorm", &layernorm,
+    m.def("layernorm", static_cast<py::array_t<float>(*)(py::array_t<float>, py::array_t<float>, py::array_t<float>, int, int, float, const std::string&)>(&layernorm),
           "LayerNorm operation",
           py::arg("input"), py::arg("weight"), py::arg("bias"),
           py::arg("rows"), py::arg("cols"), py::arg("eps") = 1e-5f,
           py::arg("impl") = "auto");
 
-    m.def("rmsnorm", &rmsnorm,
+    m.def("rmsnorm", static_cast<py::array_t<float>(*)(py::array_t<float>, py::array_t<float>, int, int, float, const std::string&)>(&rmsnorm),
           "RMSNorm operation",
           py::arg("input"), py::arg("weight"),
           py::arg("rows"), py::arg("cols"), py::arg("eps") = 1e-5f,
           py::arg("impl") = "auto");
 
-    m.def("matmul", &matmul,
+    m.def("matmul", static_cast<py::array_t<float>(*)(py::array_t<float>, py::array_t<float>, int, int, int, const std::string&)>(&matmul),
           "Matrix multiplication C = A @ B",
           py::arg("A"), py::arg("B"), py::arg("M"), py::arg("N"), py::arg("K"),
           py::arg("impl") = "auto");
