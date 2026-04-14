@@ -20,8 +20,19 @@ if(NOT pybind11_FOUND)
     )
     if(PYBIND11_PATH)
         get_filename_component(PYBIND11_DIR "${PYBIND11_PATH}" DIRECTORY)
-        include_directories(${PYBIND11_DIR}/include)
-        message(STATUS "Found pybind11 at: ${PYBIND11_DIR}")
+        # Try to find and load pybind11 CMake
+        find_file(PYBIND11_CMAKE "pybind11Tools.cmake" PATHS "${PYBIND11_DIR}/share/cmake/pybind11" "${PYBIND11_DIR}/cmake")
+        if(PYBIND11_CMAKE)
+            get_filename_component(PYBIND11_CMAKE_DIR "${PYBIND11_CMAKE}" DIRECTORY)
+            list(APPEND CMAKE_PREFIX_PATH "${PYBIND11_CMAKE_DIR}")
+            find_package(pybind11 REQUIRED)
+            message(STATUS "Found pybind11 CMake at: ${PYBIND11_CMAKE_DIR}")
+        else()
+            # Fallback: just include the headers
+            include_directories(${PYBIND11_DIR}/include)
+            message(STATUS "Found pybind11 headers at: ${PYBIND11_DIR}/include")
+            set(PYBIND11_FOUND_BY_HEADER TRUE)
+        endif()
     else()
         message(FATAL_ERROR "pybind11 not found. Please install: pip install pybind11")
     endif()
@@ -43,7 +54,14 @@ file(GLOB CUDA_SOURCES
 )
 
 # Create pybind module
-pybind11_add_module(cuda_ops ${CUDA_SOURCES})
+if(PYBIND11_FOUND_BY_HEADER)
+    # Manual module creation when only headers are available
+    Python_add_module(cuda_ops ${CUDA_SOURCES})
+    target_include_directories(cuda_ops PRIVATE ${PYBIND11_DIR}/include)
+else()
+    # Use pybind11 helper when full CMake support is available
+    pybind11_add_module(cuda_ops ${CUDA_SOURCES})
+endif()
 
 # Set properties for CUDA
 set_target_properties(cuda_ops PROPERTIES
