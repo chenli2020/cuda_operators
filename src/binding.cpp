@@ -125,6 +125,18 @@ py::array_t<float> layernorm_wrapper(py::array_t<float> input,
         layernorm::layernorm_warp(d_in, d_w, d_b, d_out, rows, cols, eps);
     } else if (impl == "vectorized") {
         layernorm::layernorm_vectorized(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage1") {
+        layernorm::stage1::layernorm_stage1(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage2_online") {
+        layernorm::stage2::layernorm_stage2_online(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage2_kahan") {
+        layernorm::stage2::layernorm_stage2_kahan(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage3") {
+        layernorm::stage3::layernorm_stage3(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage3_aggressive") {
+        layernorm::stage3::layernorm_stage3_aggressive(d_in, d_w, d_b, d_out, rows, cols, eps);
+    } else if (impl == "stage3_ilp") {
+        layernorm::stage3::layernorm_stage3_vectorized_ilp(d_in, d_w, d_b, d_out, rows, cols, eps);
     } else {
         layernorm::layernorm(d_in, d_w, d_b, d_out, rows, cols, eps);
     }
@@ -259,6 +271,8 @@ py::array_t<float> reduce_sum_wrapper(py::array_t<float> input,
         reduce::reduce_sum_shared(d_in, d_out, size);
     } else if (impl == "warp") {
         reduce::reduce_sum_warp(d_in, d_out, size);
+    } else if (impl == "twopass") {
+        reduce::reduce_sum_twopass(d_in, d_out, size);
     } else {
         reduce::reduce_sum(d_in, d_out, size);
     }
